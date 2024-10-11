@@ -2,7 +2,6 @@ import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native
 import React, { useEffect, useState } from 'react'
 import ScreenWrapper from '../../components/ScreenWrapper'
 import { useAuth } from '../../contexts/AuthContext';
-import { Button } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import {wp, hp} from '../../helper/common'
 import {theme} from '../../constants/theme'
@@ -11,33 +10,55 @@ import { useRouter } from 'expo-router';
 import Avatar from '../../components/Avatar';
 import { fetchPosts } from '../../services/postService';
 import PostCard from '../../components/PostCard';
-
+import Loading from '../../components/Loading';
+import { getUserData } from '../../services/userService';
 var limit = 0;
 
 const Home = () => {
   const {user, setAuth} = useAuth();
   const [posts, setPosts] = useState([]);
+  const [hasMore, setHasMore] = useState(true)
 
   const router = useRouter();
 
+  const handlePostEvent = async (payload) => {
+    //console.log('post new: ', payload)
+    if(payload.eventType == 'INSERT' && payload?.new?.id){
+      let newPost = {...payload.new};
+      let res = await getUserData(newPost.userId);
+      newPost.user = res.success? res.data: {};
+      setPosts(prevPosts => [newPost, ...prevPosts]);
+    }
+  }
+
   useEffect(()=> {
-    getPosts();
+    let postChannel = supabase
+    .channel('posts')
+    .on('postgres_changes', 
+      {event: '*', schema: 'public', table: 'posts'},
+      (payload) => handlePostEvent(payload)
+    )
+    .subscribe();
+    //getPosts();
+
+    return () => {
+      supabase.removeChannel(postChannel);
+    }
   }, [])
 
 
   const getPosts = async() => {
-    limit = limit + 10;
+
+    if(!hasMore) return null;
+    limit = limit + 4;
     let res = await fetchPosts(limit);
-    // console.log('posts: ', res);
-    // console.log('user: ', res.data[0].user);
     if(res.success){
+      if(posts.length == res.data.length) setHasMore(false)
       setPosts(res.data);
     }
 
   }
- 
-
-  
+   
   
   return (
     <ScreenWrapper>
@@ -74,6 +95,19 @@ const Home = () => {
               router ={router}
               />
             }
+            onEndReached={()=>{
+              getPosts();
+            }}
+            onEndReachedThreshold={0}
+            ListFooterComponent={hasMore ? (
+              <View style={{marginVertical: posts.length==0? 200: 30}}>
+                <Loading/>
+              </View>
+            ):(
+              <View style={{marginVertical: 30}}>
+                <Text style={styles.noPosts}>No more posts</Text>
+              </View>
+            )}
           />
       </View>
       {/* <Button title='log out' onPress={onLogOut}/> */}
@@ -120,7 +154,7 @@ const styles = StyleSheet.create({
   noPosts: {
     fontSize: hp(2),
     textAlign: 'center',
-    color: theme.colors.textPriamry  
+    color: theme.colors.textLight  
   },
   pill: {
     position: 'absolute',

@@ -43,11 +43,12 @@ const SignUp = () => {
     });
     setLoading(false);
 
-    // console.log('session', session);
-    // console.log('error', error);
+    console.log('session', session);
+    
 
     if(error){
       Alert.alert('Error', error.message);
+      console.log('error', error);
     }
 
   }
