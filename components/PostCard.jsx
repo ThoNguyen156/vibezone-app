@@ -10,6 +10,8 @@ import { Image } from 'expo-image'
 import { Video } from 'expo-av'
 import { downLoadFile, getSupabaseFileUrl } from '../services/imgService'
 import { createPostLike, removePostLike } from '../services/postService'
+import * as Sharing from 'expo-sharing'
+import Loading from '../components/Loading'
 
 const textStyle = {
   color: theme.colors.dark,
@@ -32,7 +34,8 @@ const PostCard = ({
     item,
     currentUser,
     router,
-    hashShadow = true
+    hashShadow = true,
+    showMoreIcon = true
 }) => {
     //console.log('post item: ', item)
     const shadowStyles = {
@@ -46,6 +49,7 @@ const PostCard = ({
     }
 
     const [likes, setLikes] = useState([]);
+    const [loading, setLoading] = useState(false);
     useEffect(() => {
       if (item?.postLikes) {
         setLikes(item.postLikes);
@@ -53,12 +57,14 @@ const PostCard = ({
     }, [item]);
     //console.log(getSupabaseFileUrl(item?.file))
 
-    
+    // open detail post
     const openPostDetails = () => {
-
+      if(!showMoreIcon) return null;
+      router.push({pathname: 'postDetails', params: {postId: item?.id}})
     }
 
 
+    // like post
     const onLike = async () => {
       if(liked){
         // remove like
@@ -91,17 +97,28 @@ const PostCard = ({
     };
     
 
+    
+
+    // share post
+    const onShare = async () => {
+      let content = { message: stripHtmltags(item?.body) };
+      if (item?.file) {
+        setLoading(true);
+        let fileUri = await downLoadFile(getSupabaseFileUrl(item?.file).uri);
+        setLoading(false);
+    
+        if (fileUri && await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(fileUri);
+        } else {
+          Alert.alert('Sharing not available or file download failed.');
+        }
+      } else {
+        Share.share(content);
+      }
+    };
+
     const liked = likes.filter(like => like.userId == currentUser?.id)[0]? true : false;
     const createdAt = moment(item?.created_at).format('MMM d');
-
-    const onShare = async () => {
-      let content = {message: stripHtmltags(item?.body) };
-      if(item?.file){
-        let url = await downLoadFile(getSupabaseFileUrl(item?.file).uri);
-         content.url = url;
-      }
-      Share.share(content);
-    }
 
   return (
     <View style={[styles.container, hashShadow && shadowStyles]}>
@@ -118,10 +135,14 @@ const PostCard = ({
                 <Text style={styles.postTime}>{createdAt}</Text>
             </View>
         </View>
-
-        <TouchableOpacity onPress={openPostDetails}>
-          <Icon name="threeDotsHorizontal" size={hp(3.4)} strokeWidth={3} color={ theme.colors.textLight}/>
-        </TouchableOpacity>
+        {
+          showMoreIcon && (
+            <TouchableOpacity onPress={openPostDetails}>
+              <Icon name="threeDotsHorizontal" size={hp(3.4)} strokeWidth={3} color={ theme.colors.textLight}/>
+            </TouchableOpacity>
+          )
+        }
+        
       </View> 
       {/* post body and media */}
       <View style={styles.content}>
@@ -174,19 +195,26 @@ const PostCard = ({
             </Text>
           </View>
           <View style={styles.footerButton}>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={openPostDetails}>
               <Icon name="comment" size={24} color={theme.colors.textLight}/>
             </TouchableOpacity>
             <Text style={styles.count}>
               {
-                0
+                item?.comments[0]?.count
               }
             </Text>
           </View>
           <View style={styles.footerButton}>
-            <TouchableOpacity onPress={onShare}>
-              <Icon name="share" size={24} color={theme.colors.textLight}/>
-            </TouchableOpacity>
+            {
+              loading? (
+                  <Loading size="small"/>
+              ):(
+                <TouchableOpacity onPress={onShare}>
+                  <Icon name="share" size={24} color={theme.colors.textLight}/>
+                </TouchableOpacity>
+              )
+            }
+            
           </View>
       </View>
 

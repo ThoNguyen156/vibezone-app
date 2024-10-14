@@ -40,7 +40,8 @@ export const fetchPosts = async (limit=10) => {
         .select(`
                 *,
                 user: users (id, name, image),
-                postLikes (*)
+                postLikes (*),
+                comments (count)
             `)
         .order('created_at', {ascending: false})
         .limit(limit);
@@ -95,5 +96,53 @@ export const removePostLike = async (postId, userId) => {
     }catch(e){
         console.log('post like  error: ', e);
         return{ success: false, msg: 'Khoong the go bo thich bai dang'}
+    }
+}
+
+// fetch post detail
+export const fetchPostDetails = async (postId) => {
+    try{
+        const {data, error} = await supabase
+        .from('posts')
+        .select(`
+                *,
+                user: users (id, name, image),
+                postLikes (*),
+                comments(*, user: users(id, name, image))
+            `)
+        .eq('id', postId)
+        .order("created_at", {ascending: false, foreignTable: 'comments'})
+        .single();
+
+        if(error){
+            console.log('fetch post detail error: ', error);
+            return{ success: false, msg: 'Khoong the tai bai dang'}
+        }
+
+        return {success: true, data: data};
+    }catch(e){
+        console.log('fetch post detail error: ', e);
+        return{ success: false, msg: 'Khoong the tai bai dang'}
+    }
+}
+
+// create new comment
+export const createComment = async (comment) => {
+    try{
+       
+        const {data, error} = await supabase
+        .from('comments')
+        .insert(comment)
+        .select()
+        .single();
+        if(error){
+            console.log('commnet  error: ', error);
+            return{ success: false, msg: 'Khoong the thich bai dang'}
+        }
+
+        return {success: true, data: data};
+    }catch(e){
+        console.log('commnet  error: ', e);
+        return{ success: false, msg: 'Khoong the thich bai dang'}
     }
 }
