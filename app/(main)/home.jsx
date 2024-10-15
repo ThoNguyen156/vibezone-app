@@ -68,6 +68,9 @@ const Home = () => {
               <Text style={styles.title}>VibeZone</Text>
               <View style={styles.icons}>
                 <Pressable onPress={() => router.push('notifications')}>
+                  <Icon name="message" size={hp(3.5)} strokeWidth={2} color={theme.colors.textPriamry}/>
+                </Pressable>
+                <Pressable onPress={() => router.push('notifications')}>
                   <Icon name="heart" size={hp(3.2)} strokeWidth={2} color={theme.colors.textPriamry}/>
                 </Pressable>
                 <Pressable onPress={() => router.push('newPost')}>
