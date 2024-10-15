@@ -146,3 +146,23 @@ export const createComment = async (comment) => {
         return{ success: false, msg: 'Khoong the thich bai dang'}
     }
 }
+
+export const removeComment = async (commentId) => {
+    try{
+       
+        const {error} = await supabase
+        .from('comments')
+        .delete()
+        .eq('id', commentId)
+        
+        if(error){
+            console.log('delete comment  error: ', error);
+            return{ success: false, msg: 'Khoong the go bo thich bai dang'}
+        }
+
+        return {success: true, data: {commentId}};
+    }catch(e){
+        console.log('delete comment  error: ', e);
+        return{ success: false, msg: 'Khoong the go bo thich bai dang'}
+    }
+}

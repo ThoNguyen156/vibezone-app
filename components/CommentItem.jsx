@@ -1,4 +1,4 @@
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import React from 'react'
 import { theme } from '../constants/theme'
 import { hp } from '../helper/common'
@@ -7,11 +7,27 @@ import moment from 'moment'
 import Icon from '../assets/icons'
 
 const CommentItem = ({
-    item
+    item,
+    canDelete= false,
+    onDelete = ()=>{}
 }) => {
 
     const createdAt = moment(item?.created_at).format('MMM d');
 
+    const handleDelete = () => {
+        Alert.alert('Confirm', "Are you sure you want to delete", [
+            {
+              text: 'Cancel',
+              onPress: () => console.log("modal cancelled"),
+              style: 'cancel'
+            },
+            {
+              text: 'Delete',
+              onPress: () => onDelete(item),
+              style: 'destructive'
+            }
+          ])
+    }
 
   return (
     <View style={styles.container}>
@@ -32,10 +48,18 @@ const CommentItem = ({
                         }
                     </Text>
                 </View>
-                <TouchableOpacity>
-                    <Icon name="delete" size={hp(2)} color={theme.colors.rose}/>
-                </TouchableOpacity>
+                {
+                    canDelete && (
+                        <TouchableOpacity onPress={handleDelete}>
+                            <Icon name="delete" size={hp(2.5)} color={theme.colors.rose}/>
+                        </TouchableOpacity>
+                    )
+                }
+               
             </View>
+            <Text style={[styles.text, {fontWeight: 'normal'}]}>
+                {item?.text}
+            </Text>
         </View>
     </View>
   )
@@ -50,7 +74,7 @@ const styles = StyleSheet.create({
         gap: 7
     },
     content: {
-        backgroundColor: 'rgba(0,0,0,0.06',
+        backgroundColor: 'rgba(0,0,0,0.06)',
         flex: 1,
         gap: 5,
         paddingHorizontal: 14,
